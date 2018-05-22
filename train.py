@@ -165,6 +165,7 @@ def main():
 
     print('start training')
     trainer.run()
+    chainer.serializers.save_npz('%s/model.npz' % args.out, model)
 
 
 if __name__ == '__main__':
