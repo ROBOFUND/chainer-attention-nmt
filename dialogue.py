@@ -73,6 +73,7 @@ def main():
     model = Seq2seq(len(source_ids), len(target_ids), args.encoder_layer,
                     args.encoder_unit, args.encoder_dropout,
                     args.decoder_unit, args.attention_unit, args.maxout_unit)
+    chainer.serializers.load_npz(args.model_npz, model)
     if args.gpu >= 0:
         chainer.cuda.get_device(args.gpu).use()
         model.to_gpu(args.gpu)
@@ -81,6 +82,7 @@ def main():
     while True:
         line = input('> ')
         words = m.parse(line).split()
+        words.append('<EOS>')
         x = np.zeros((1, len(words)), dtype=np.int32)
         for i in range(len(words)):
             x[0, i] = source_ids.get(words[i], UNK)
@@ -88,6 +90,9 @@ def main():
         o_words = []
         for i in range(len(result[0])):
             o_words.append(target_words.get(result[0][i], '<unk>'))
+            if o_words[-1] == '<EOS>':
+                o_words.pop()
+                break
         print(" ".join(o_words))
         #import pdb; pdb.set_trace()
 
