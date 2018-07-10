@@ -5,7 +5,7 @@ import progressbar
 import re
 
 from utils import count_lines
-
+import s3utils
 
 split_pattern = re.compile(r'([.,!?"\':;)(])')
 digit_pattern = re.compile(r'\d')
@@ -26,7 +26,7 @@ def split_sentence(s, use_lower):
 def read_file(path, use_lower):
     n_lines = count_lines(path)
     bar = progressbar.ProgressBar()
-    with io.open(path, encoding='utf-8', errors='ignore') as f:
+    with s3utils.get_s3file(path) as f:
         for line in bar(f, max_value=n_lines):
             words = split_sentence(line, use_lower)
             yield words
@@ -36,7 +36,7 @@ def preprocess_dataset(path, outpath, vocab_path=None, vocab_size=None,
                        use_lower=False):
     token_count = 0
     counts = collections.Counter()
-    with io.open(outpath, 'w', encoding='utf-8') as f:
+    with s3utils.open_buf() as f:
         for words in read_file(path, use_lower):
             line = ' '.join(words)
             f.write(line)
@@ -45,14 +45,16 @@ def preprocess_dataset(path, outpath, vocab_path=None, vocab_size=None,
                 for word in words:
                     counts[word] += 1
             token_count += len(words)
+        s3utils.write_obj(outpath, f)
     print('number of tokens: %d' % token_count)
 
     if vocab_path and vocab_size:
         vocab = [word for (word, _) in counts.most_common(vocab_size)]
-        with io.open(vocab_path, 'w', encoding='utf-8') as f:
+        with s3utils.open_buf() as f:
             for word in vocab:
                 f.write(word)
                 f.write('\n')
+            s3utils.write_obj(vocab_path, f)
 
 
 def main(args):
