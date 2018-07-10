@@ -5,6 +5,8 @@ import progressbar
 from chainer import cuda
 from chainer.dataset import convert
 
+import s3utils
+
 # speical symbols
 PAD = -1
 UNK = 0
@@ -46,12 +48,12 @@ def seq2seq_pad_concat_convert(xy_batch, device):
 
 
 def count_lines(path):
-    with open(path) as f:
+    with s3utils.get_s3file(path) as f:
         return sum([1 for _ in f])
 
 
 def load_vocabulary(path):
-    with open(path) as f:
+    with s3utils.get_s3file(path) as f:
         # +2 for UNK and EOS
         word_ids = {line.strip(): i + 2 for i, line in enumerate(f)}
     word_ids['<UNK>'] = UNK
@@ -64,7 +66,7 @@ def load_data(vocabulary, path, debug=False):
     bar = progressbar.ProgressBar()
     data = []
     print('loading...: %s' % path)
-    with open(path) as f:
+    with s3utils.get_s3file(path) as f:
         for line in bar(f, max_value=n_lines):
             words = line.strip().split()
             array = numpy.array([vocabulary.get(w, UNK) for w in words], 'i')
